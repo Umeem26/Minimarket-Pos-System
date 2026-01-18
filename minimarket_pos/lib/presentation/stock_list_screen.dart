@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Untuk format Rupiah
 import '../data/product_service.dart';
 import 'add_product_screen.dart';
-import 'mutation_screen.dart'; // Tambahkan ini
+import 'mutation_screen.dart';
+import 'cashier_screen.dart';
 
 class StockListScreen extends StatefulWidget {
   const StockListScreen({super.key});
@@ -12,11 +14,32 @@ class StockListScreen extends StatefulWidget {
 
 class _StockListScreenState extends State<StockListScreen> {
   final _service = ProductService();
+  
+  // Formatter Rupiah
+  final _currency = NumberFormat.currency(
+    locale: 'id_ID', 
+    symbol: 'Rp ', 
+    decimalDigits: 0
+  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Stok Toko (Real-time)")),
+      appBar: AppBar(title: const Text("Stok Toko (Real-time)"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.point_of_sale, size: 30),
+            tooltip: "Menu Kasir",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CashierScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _service.getStockList(),
         builder: (context, snapshot) {
@@ -42,6 +65,7 @@ class _StockListScreenState extends State<StockListScreen> {
             itemBuilder: (context, index) {
               final stock = snapshot.data![index];
               final product = stock['products'];
+              final price = product['price'] ?? 0; // Ambil harga
               
               return Card(
                 child: Padding(
@@ -59,7 +83,7 @@ class _StockListScreenState extends State<StockListScreen> {
                       ),
                       const SizedBox(width: 15),
                       
-                      // 2. Info Barang
+                      // 2. Info Barang & Harga
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,16 +93,27 @@ class _StockListScreenState extends State<StockListScreen> {
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(height: 4),
+                            
+                            // TAMPILKAN HARGA DISINI
+                            Text(
+                              _currency.format(price),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold, 
+                                color: Colors.green, // Warna hijau uang
+                                fontSize: 14
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+
                             Text("Lokasi: ${stock['floor_name']}", style: TextStyle(color: Colors.grey[700], fontSize: 12)),
-                            // Tampilkan Expired Date jika ada
                             if (stock['expiry_date'] != null)
-                               Text("Exp: ${stock['expiry_date'].substring(0, 10)}", // Ambil tanggalnya saja
+                               Text("Exp: ${stock['expiry_date'].substring(0, 10)}", 
                                    style: const TextStyle(color: Colors.red, fontSize: 11)),
                           ],
                         ),
                       ),
                       
-                      // 3. Stok & Tombol Aksi
+                      // 3. Stok & Tombol Mutasi
                       Row(
                         children: [
                           Column(
@@ -97,9 +132,9 @@ class _StockListScreenState extends State<StockListScreen> {
                           ),
                           const SizedBox(width: 5),
                           
+                          // Tombol Mutasi
                           IconButton(
-                            // GANTI: swap_horiz_circle -> swap_horiz (atau change_circle)
-                            icon: const Icon(Icons.swap_horiz, color: Color(0xFFEF6C00), size: 32),
+                            icon: const Icon(Icons.swap_horiz, color: Color(0xFFEF6C00), size: 30),
                             tooltip: "Pindah Lantai",
                             onPressed: () {
                               Navigator.push(
@@ -123,7 +158,7 @@ class _StockListScreenState extends State<StockListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Theme.of(context).colorScheme.secondary, // Oranye
+        backgroundColor: Theme.of(context).colorScheme.secondary,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text("Tambah Barang", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         onPressed: () {

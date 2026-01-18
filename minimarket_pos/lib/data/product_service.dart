@@ -2,9 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'product_model.dart';
 
 class ProductService {
+  // Ini adalah "kunci" agar semua fungsi di bawah kenal 'supabase'
   final supabase = Supabase.instance.client;
 
-  // 1. Ambil Kategori
+  // 1. Ambil Daftar Kategori
   Future<List<Map<String, dynamic>>> getCategories() async {
     try {
       final response = await supabase.from('categories').select().order('name');
@@ -15,7 +16,7 @@ class ProductService {
     }
   }
 
-  // 2. Ambil List Stok
+  // 2. Ambil Daftar Stok (Real-time List)
   Future<List<Map<String, dynamic>>> getStockList() async {
     try {
       final response = await supabase
@@ -29,17 +30,22 @@ class ProductService {
     }
   }
 
-  // 3. Tambah Produk Baru
+  // 3. Tambah Produk Baru (LENGKAP DENGAN HARGA)
   Future<void> addProduct(ProductModel product, String floor, double initialQty, DateTime? expiry) async {
     try {
+      // Simpan Data Produk Utama
       await supabase.from('products').insert({
         'id': product.id,
         'brand_name': product.brandName,
         'category_id': product.categoryId,
         'unit_type': product.unitType,
         'min_stock': product.minStock,
+        // Data Harga (Baru)
+        'price': product.price,
+        'capital_price': product.capitalPrice,
       });
 
+      // Simpan Stok Awal
       await supabase.from('stocks').insert({
         'product_id': product.id,
         'floor_name': floor,
@@ -51,17 +57,17 @@ class ProductService {
     }
   }
 
-  // --- FITUR BARU: PINDAH STOK (MUTASI) ---
+  // 4. Mutasi Stok (Pindah Antar Lantai)
   Future<void> moveStock({
-    required int sourceStockId,      // ID baris stok asal
-    required String productId,       // ID Produk
-    required String targetFloor,     // Mau dipindah ke lantai mana?
-    required double qtyToMove,       // Berapa banyak?
-    required double currentSourceQty,// Stok asal sekarang berapa?
-    DateTime? expiryDate,            // Tanggal kadaluarsa (dibawa pindah)
+    required int sourceStockId,
+    required String productId,
+    required String targetFloor,
+    required double qtyToMove,
+    required double currentSourceQty,
+    DateTime? expiryDate,
   }) async {
     try {
-      // A. Cek dulu, stok asal cukup gak?
+      // A. Cek apakah stok asal cukup?
       if (qtyToMove > currentSourceQty) {
         throw Exception("Stok tidak cukup! Cuma ada $currentSourceQty");
       }
@@ -69,7 +75,7 @@ class ProductService {
       // B. Kurangi stok di lantai ASAL
       final sisa = currentSourceQty - qtyToMove;
       if (sisa == 0) {
-        // Jika habis, hapus barisnya dari lantai asal (Opsional, tapi biar rapi)
+        // Jika habis, hapus barisnya biar bersih
         await supabase.from('stocks').delete().eq('id', sourceStockId);
       } else {
         // Jika sisa, update angkanya
@@ -82,16 +88,16 @@ class ProductService {
           .select()
           .eq('product_id', productId)
           .eq('floor_name', targetFloor)
-          .maybeSingle(); // Ambil 1 jika ada
+          .maybeSingle(); 
 
       if (checkDest != null) {
-        // D1. Jika SUDAH ADA, update (tambahkan)
+        // D1. Jika SUDAH ADA, tambahkan ke stok yang ada
         final double oldQty = (checkDest['quantity'] as num).toDouble();
         await supabase.from('stocks').update({
           'quantity': oldQty + qtyToMove
         }).eq('id', checkDest['id']);
       } else {
-        // D2. Jika BELUM ADA, buat baris baru di lantai tujuan
+        // D2. Jika BELUM ADA, buat baris baru
         await supabase.from('stocks').insert({
           'product_id': productId,
           'floor_name': targetFloor,
@@ -103,4 +109,5 @@ class ProductService {
       throw Exception("Gagal Mutasi: $e");
     }
   }
-}
+} 
+// Pastikan kurung kurawal penutup class ada di paling bawah sini
