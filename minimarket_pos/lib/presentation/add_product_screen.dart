@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../data/product_model.dart';
 import '../data/product_service.dart';
@@ -15,13 +14,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
   final _service = ProductService();
 
-  // Controller
   final _idController = TextEditingController();
   final _nameController = TextEditingController();
   final _qtyController = TextEditingController();
   final _minStockController = TextEditingController(text: '5');
   
-  // State Dropdown
   String? _selectedCategory;
   String _selectedUnit = 'pcs';
   String _selectedFloor = 'Lantai 1';
@@ -35,26 +32,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _loadCategories();
   }
 
-  // Fungsi Load Data Asli dengan Debug
   void _loadCategories() async {
-    print("🔄 Memulai proses load kategori di UI...");
     final data = await _service.getCategories();
-    
-    if (mounted) {
-      setState(() {
-        _categories = data;
-      });
-      
-      // Jika data kosong, beri tahu user
-      if (data.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Data Kategori Kosong atau Gagal Dimuat. Cek Debug Console."),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    if (mounted) setState(() => _categories = data);
   }
 
   void _saveProduct() async {
@@ -77,84 +57,97 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Barang Berhasil Ditambahkan!")),
+            const SnackBar(content: Text("✅ Barang Berhasil Disimpan!")),
           );
           Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
         }
       }
     } else if (_selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pilih Kategori dulu!"), backgroundColor: Colors.orange),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("⚠️ Pilih Kategori dulu!")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Tambah Barang Baru")),
+      appBar: AppBar(title: const Text("Input Barang Baru")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextField(_idController, "Barcode / ID Barang", Icons.qr_code_scanner),
-              const SizedBox(height: 15),
-              _buildTextField(_nameController, "Nama Merek / Barang", Icons.shopping_bag),
-              const SizedBox(height: 15),
-              
-              Row(
+        child: Card( // Bungkus form pakai Card putih biar rapi
+          elevation: 2,
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _buildCategoryDropdown()),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildUnitDropdown()),
+                  const Text("Informasi Utama", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  const SizedBox(height: 15),
+                  _buildTextField(_idController, "Barcode / ID Barang", Icons.qr_code),
+                  const SizedBox(height: 15),
+                  _buildTextField(_nameController, "Nama Merek / Barang", Icons.label),
+                  const SizedBox(height: 15),
+                  
+                  Row(
+                    children: [
+                      Expanded(flex: 2, child: _buildCategoryDropdown()),
+                      const SizedBox(width: 10),
+                      Expanded(flex: 1, child: _buildUnitDropdown()),
+                    ],
+                  ),
+                  const Divider(height: 40, thickness: 1),
+                  
+                  const Text("Stok & Lokasi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(child: _buildTextField(_qtyController, "Jumlah Awal", Icons.inventory, isNumber: true)),
+                      const SizedBox(width: 10),
+                      Expanded(child: _buildFloorDropdown()),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  _buildTextField(_minStockController, "Peringatan Stok Minim", Icons.warning_amber, isNumber: true),
+                  
+                  const SizedBox(height: 15),
+                  _buildDatePicker(),
+                  
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[800], // Tombol Biru Tua
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: _saveProduct,
+                      child: const Text("SIMPAN DATA", style: TextStyle(fontSize: 16, color: Colors.white)),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 15),
-              
-              Row(
-                children: [
-                  Expanded(child: _buildTextField(_qtyController, "Jumlah Stok", Icons.inventory, isNumber: true)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildFloorDropdown()),
-                ],
-              ),
-              const SizedBox(height: 15),
-
-              _buildTextField(_minStockController, "Minimal Stok", Icons.warning_amber, isNumber: true),
-              const SizedBox(height: 15),
-
-              _buildDatePicker(),
-              
-              const SizedBox(height: 30),
-              _buildSaveButton(),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // --- Widget Helper (Disederhanakan untuk Light Mode) ---
   Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false}) {
     return TextFormField(
       controller: controller,
       keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFFBB86FC)),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFBB86FC), width: 2),
-        ),
+        prefixIcon: Icon(icon, color: Colors.blue[700]),
       ),
       validator: (v) => v!.isEmpty ? "Wajib diisi" : null,
     );
@@ -162,58 +155,33 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        labelText: "Kategori",
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+      decoration: const InputDecoration(labelText: "Kategori"),
       value: _selectedCategory,
-      items: _categories.map((c) => DropdownMenuItem(
-        value: c['id'].toString(), 
-        child: Text(c['name'])
-      )).toList(),
+      items: _categories.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(c['name']))).toList(),
       onChanged: (v) => setState(() => _selectedCategory = v),
-      hint: const Text("Pilih Kategori"), // Tambahan Hint
     );
   }
 
   Widget _buildUnitDropdown() {
     return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        labelText: "Satuan",
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+      decoration: const InputDecoration(labelText: "Satuan"),
       value: _selectedUnit,
-      items: ['pcs', 'gram', 'liter', 'ml'].map((u) => DropdownMenuItem(
-        value: u, 
-        child: Text(u)
-      )).toList(),
+      items: ['pcs', 'gram', 'liter', 'ml'].map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
       onChanged: (v) => setState(() => _selectedUnit = v!),
     );
   }
 
   Widget _buildFloorDropdown() {
     return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        labelText: "Lokasi Lantai",
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+      decoration: const InputDecoration(labelText: "Lokasi"),
       value: _selectedFloor,
-      items: ['Lantai 1', 'Lantai 2'].map((f) => DropdownMenuItem(
-        value: f, 
-        child: Text(f)
-      )).toList(),
+      items: ['Lantai 1', 'Lantai 2'].map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
       onChanged: (v) => setState(() => _selectedFloor = v!),
     );
   }
 
   Widget _buildDatePicker() {
-    return ListTile(
-      tileColor: const Color(0xFF1E1E1E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      leading: const Icon(Icons.date_range, color: Color(0xFF03DAC6)),
-      title: Text(_selectedExpiry == null 
-        ? "Set Tanggal Kadaluarsa" 
-        : "Kadaluarsa: ${DateFormat('dd MMM yyyy').format(_selectedExpiry!)}"),
+    return InkWell(
       onTap: () async {
         DateTime? picked = await showDatePicker(
           context: context,
@@ -223,27 +191,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
         );
         if (picked != null) setState(() => _selectedExpiry = picked);
       },
-    );
-  }
-
-  Widget _buildSaveButton() {
-    return Container(
-      width: double.infinity,
-      height: 55,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFBB86FC), Color(0xFF03DAC6)],
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: "Tanggal Kadaluarsa (Opsional)",
+          prefixIcon: Icon(Icons.calendar_today, color: Colors.blue[700]),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         ),
-      ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Text(
+          _selectedExpiry == null ? "-" : DateFormat('dd MMM yyyy').format(_selectedExpiry!),
+          style: TextStyle(color: _selectedExpiry == null ? Colors.grey : Colors.black87),
         ),
-        onPressed: _saveProduct,
-        child: const Text("SIMPAN BARANG", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
       ),
     );
   }
