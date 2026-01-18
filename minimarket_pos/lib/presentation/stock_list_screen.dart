@@ -34,7 +34,10 @@ class _StockListScreenState extends State<StockListScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CashierScreen()),
-              );
+              ).then((value) {
+                // INI KUNCINYA: Saat kembali, paksa refresh UI
+                setState(() {}); 
+              });
             },
           ),
           const SizedBox(width: 10),

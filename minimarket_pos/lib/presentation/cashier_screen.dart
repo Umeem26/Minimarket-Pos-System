@@ -131,9 +131,10 @@ class _CashierScreenState extends State<CashierScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // Tutup Dialog
-                  setState(() { // Reset Keranjang
+                  setState(() { 
                     _cart.clear();
                     _payController.clear();
+                    _loadProducts(); // TAMBAHAN: Refresh stok di halaman kasir juga
                   });
                 }, 
                 child: const Text("Tutup & Transaksi Baru")

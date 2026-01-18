@@ -4,7 +4,7 @@ import 'transaction_model.dart';
 class TransactionService {
   final supabase = Supabase.instance.client;
 
-  // Simpan Transaksi ke Database
+  // Simpan Transaksi & Potong Stok
   Future<void> saveTransaction(TransactionModel transaction) async {
     try {
       // 1. Simpan HEADER (Total, Bayar, Kembalian)
@@ -17,7 +17,6 @@ class TransactionService {
       final newTransactionId = response['id'];
 
       // 2. Simpan DETAIL BARANG (Isi Keranjang)
-      // Kita siapkan datanya dalam bentuk List biar sekali kirim langsung masuk semua
       final List<Map<String, dynamic>> itemsData = transaction.items.map((item) {
         return {
           'transaction_id': newTransactionId,
@@ -30,9 +29,32 @@ class TransactionService {
 
       await supabase.from('transaction_items').insert(itemsData);
 
-      // 3. (Opsional) POTONG STOK
-      // Di tahap awal ini kita simpan data penjualannya dulu agar aman.
-      // Nanti kita bisa tambahkan logika potong stok di sini.
+      // 3. --- LOGIKA BARU: POTONG STOK ---
+      for (var item in transaction.items) {
+        // A. Cari stok barang ini (ambil yang stoknya terbanyak dulu biar aman)
+        final stockResponse = await supabase
+            .from('stocks')
+            .select()
+            .eq('product_id', item.productId)
+            .order('quantity', ascending: false) // Prioritaskan stok banyak
+            .limit(1)
+            .maybeSingle();
+
+        if (stockResponse != null) {
+          final stockId = stockResponse['id'];
+          final currentQty = (stockResponse['quantity'] as num).toDouble();
+          
+          // B. Hitung sisa stok
+          double newQty = currentQty - item.quantity;
+          if (newQty < 0) newQty = 0; // Jaga-jaga biar gak minus
+
+          // C. Update ke database
+          await supabase
+              .from('stocks')
+              .update({'quantity': newQty})
+              .eq('id', stockId);
+        }
+      }
 
     } catch (e) {
       throw Exception("Gagal Transaksi: $e");
