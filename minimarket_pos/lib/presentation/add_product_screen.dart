@@ -15,8 +15,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
   final _service = ProductService();
 
-  // Controller untuk Input
-  final _idController = TextEditingController(); // Barcode
+  // Controller
+  final _idController = TextEditingController();
   final _nameController = TextEditingController();
   final _qtyController = TextEditingController();
   final _minStockController = TextEditingController(text: '5');
@@ -35,12 +35,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _loadCategories();
   }
 
+  // Fungsi Load Data Asli dengan Debug
   void _loadCategories() async {
+    print("🔄 Memulai proses load kategori di UI...");
     final data = await _service.getCategories();
-    setState(() => _categories = data);
+    
+    if (mounted) {
+      setState(() {
+        _categories = data;
+      });
+      
+      // Jika data kosong, beri tahu user
+      if (data.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Data Kategori Kosong atau Gagal Dimuat. Cek Debug Console."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  // Fungsi Simpan
   void _saveProduct() async {
     if (_formKey.currentState!.validate() && _selectedCategory != null) {
       try {
@@ -59,15 +75,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
           _selectedExpiry
         );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Barang Berhasil Ditambahkan!")),
-        );
-        Navigator.pop(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Barang Berhasil Ditambahkan!")),
+          );
+          Navigator.pop(context);
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          );
+        }
       }
+    } else if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pilih Kategori dulu!"), backgroundColor: Colors.orange),
+      );
     }
   }
 
@@ -87,7 +111,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
               _buildTextField(_nameController, "Nama Merek / Barang", Icons.shopping_bag),
               const SizedBox(height: 15),
               
-              // Row untuk Kategori & Satuan
               Row(
                 children: [
                   Expanded(child: _buildCategoryDropdown()),
@@ -97,7 +120,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               const SizedBox(height: 15),
               
-              // Row untuk Stok & Lantai
               Row(
                 children: [
                   Expanded(child: _buildTextField(_qtyController, "Jumlah Stok", Icons.inventory, isNumber: true)),
@@ -110,7 +132,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
               _buildTextField(_minStockController, "Minimal Stok", Icons.warning_amber, isNumber: true),
               const SizedBox(height: 15),
 
-              // Tanggal Kadaluarsa (Khusus Frozen/Obat)
               _buildDatePicker(),
               
               const SizedBox(height: 30),
@@ -122,7 +143,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
-  // Widget Helper untuk UI yang Konsisten
   Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false}) {
     return TextFormField(
       controller: controller,
@@ -152,6 +172,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         child: Text(c['name'])
       )).toList(),
       onChanged: (v) => setState(() => _selectedCategory = v),
+      hint: const Text("Pilih Kategori"), // Tambahan Hint
     );
   }
 
