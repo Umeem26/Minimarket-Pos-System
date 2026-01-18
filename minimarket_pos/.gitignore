@@ -1,0 +1,23 @@
+# Secrets
+.env*
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Android
+.gradle/
+local.properties
+*.keystore
+*.jks
+
+# iOS
+.generated/
+Pods/
+
+# OS-specific
+.DS_Store
+Thumbs.db
