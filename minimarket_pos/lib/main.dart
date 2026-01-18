@@ -3,9 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// --- TAMBAHAN PENTING (SOLUSI ERROR MERAH) ---
+import 'package:intl/date_symbol_data_local.dart'; 
+
 // Import halaman
 import 'presentation/stock_list_screen.dart';
 import 'presentation/add_product_screen.dart'; 
+import 'presentation/dashboard_screen.dart'; // Pastikan dashboard di-import
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +19,10 @@ Future<void> main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
+  // --- BARIS AJAIB PENYEMBUH ERROR ---
+  // Kita "daftarkan" dulu format tanggal Indonesia agar aplikasi tidak kaget
+  await initializeDateFormatting('id_ID', null);
 
   runApp(const MyApp());
 }
@@ -29,28 +37,25 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       
       theme: ThemeData(
-        useMaterial3: true, // Desain Modern Otomatis
+        useMaterial3: true, 
         brightness: Brightness.light,
-        primaryColor: const Color(0xFF1565C0), // Biru Profesional
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA), // Putih Tulang (Lebih lembut dari putih biasa)
+        primaryColor: const Color(0xFF1565C0), 
+        scaffoldBackgroundColor: const Color(0xFFF8F9FA), 
         
-        // Skema Warna Utama
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1565C0),
           brightness: Brightness.light,
-          secondary: const Color(0xFFEF6C00), // Aksen Oranye
+          secondary: const Color(0xFFEF6C00), 
         ),
 
-        // --- UPGRADE FONT DISINI (POPINS) ---
         textTheme: GoogleFonts.poppinsTextTheme(),
 
-        // Style Judul Atas
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF1565C0),
           foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: true,
-          titleTextStyle: TextStyle( // Memaksa judul pakai Poppins Bold
+          titleTextStyle: TextStyle( 
             fontFamily: 'Poppins', 
             fontSize: 20, 
             fontWeight: FontWeight.w600,
@@ -58,17 +63,16 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // Style Kotak Input (Form)
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12), // Lebih bulat dikit biar friendly
+            borderRadius: BorderRadius.circular(12), 
             borderSide: const BorderSide(color: Colors.grey),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: borderSide(Colors.grey.shade300),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -77,10 +81,8 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      home: const StockListScreen(),
+      // Pintu Masuk -> Dashboard
+      home: const DashboardScreen(),
     );
   }
-
-  // Helper simpel untuk border
-  BorderSide borderSide(Color color) => BorderSide(color: color);
 }

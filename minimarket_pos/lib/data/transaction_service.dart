@@ -60,4 +60,29 @@ class TransactionService {
       throw Exception("Gagal Transaksi: $e");
     }
   }
+
+  // --- AMBIL TRANSAKSI HARI INI (Untuk Dashboard) ---
+  Future<List<Map<String, dynamic>>> getTodayTransactions() async {
+    try {
+      final now = DateTime.now();
+      // Format tanggal hari ini: "YYYY-MM-DD"
+      final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      
+      // Ambil transaksi yang created_at-nya dimulai dengan tanggal hari ini
+      // Menggunakan filter gte (Greater Than or Equal) jam 00:00 hari ini
+      final startOfDay = "${todayStr}T00:00:00";
+      final endOfDay = "${todayStr}T23:59:59";
+
+      final response = await supabase
+          .from('transactions')
+          .select()
+          .gte('created_at', startOfDay)
+          .lte('created_at', endOfDay);
+          
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print("Error Transaksi Hari Ini: $e");
+      return [];
+    }
+  }
 }
