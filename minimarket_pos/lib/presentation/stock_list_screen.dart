@@ -76,14 +76,22 @@ class _StockListScreenState extends State<StockListScreen> {
                   padding: const EdgeInsets.all(12.0),
                   child: Row(
                     children: [
-                      // 1. Icon Kategori
+                      // 1. FOTO PRODUK (Ganti Bagian Ikon Lama dengan ini)
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        width: 60, height: 60, // Ukuran Kotak Foto
                         decoration: BoxDecoration(
                           color: Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(8),
+                          image: (product['image_url'] != null && product['image_url'].toString().isNotEmpty)
+                              ? DecorationImage(
+                                  image: NetworkImage(product['image_url']), // Load dari Supabase
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        child: Icon(Icons.shopping_bag, color: Theme.of(context).primaryColor),
+                        child: (product['image_url'] == null || product['image_url'].toString().isEmpty)
+                            ? Icon(Icons.shopping_bag, color: Theme.of(context).primaryColor, size: 30) // Fallback Icon
+                            : null, // Kalau ada foto, child-nya null
                       ),
                       const SizedBox(width: 15),
                       

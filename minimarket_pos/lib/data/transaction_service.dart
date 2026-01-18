@@ -5,18 +5,19 @@ class TransactionService {
   final supabase = Supabase.instance.client;
 
   // Simpan Transaksi & Potong Stok
-  Future<void> saveTransaction(TransactionModel transaction) async {
+  // Ubah void menjadi Future<int>
+  Future<int> saveTransaction(TransactionModel transaction) async {
     try {
-      // 1. Simpan HEADER (Total, Bayar, Kembalian)
+      // 1. Simpan HEADER
       final response = await supabase.from('transactions').insert({
         'total_amount': transaction.totalAmount,
         'paid_amount': transaction.paidAmount,
         'change_amount': transaction.changeAmount,
-      }).select().single(); // select() agar kita dapat ID barunya
+      }).select().single();
 
-      final newTransactionId = response['id'];
+      final newTransactionId = response['id']; // Kita butuh angka ini
 
-      // 2. Simpan DETAIL BARANG (Isi Keranjang)
+      // 2. Simpan DETAIL (Kode tetap sama)
       final List<Map<String, dynamic>> itemsData = transaction.items.map((item) {
         return {
           'transaction_id': newTransactionId,
@@ -29,32 +30,23 @@ class TransactionService {
 
       await supabase.from('transaction_items').insert(itemsData);
 
-      // 3. --- LOGIKA BARU: POTONG STOK ---
+      // 3. Potong Stok (Kode tetap sama)
       for (var item in transaction.items) {
-        // A. Cari stok barang ini (ambil yang stoknya terbanyak dulu biar aman)
         final stockResponse = await supabase
-            .from('stocks')
-            .select()
-            .eq('product_id', item.productId)
-            .order('quantity', ascending: false) // Prioritaskan stok banyak
-            .limit(1)
-            .maybeSingle();
+            .from('stocks').select().eq('product_id', item.productId)
+            .order('quantity', ascending: false).limit(1).maybeSingle();
 
         if (stockResponse != null) {
           final stockId = stockResponse['id'];
           final currentQty = (stockResponse['quantity'] as num).toDouble();
-          
-          // B. Hitung sisa stok
           double newQty = currentQty - item.quantity;
-          if (newQty < 0) newQty = 0; // Jaga-jaga biar gak minus
-
-          // C. Update ke database
-          await supabase
-              .from('stocks')
-              .update({'quantity': newQty})
-              .eq('id', stockId);
+          if (newQty < 0) newQty = 0;
+          await supabase.from('stocks').update({'quantity': newQty}).eq('id', stockId);
         }
       }
+
+      // KEMBALIKAN ID NOTA
+      return newTransactionId; 
 
     } catch (e) {
       throw Exception("Gagal Transaksi: $e");
@@ -82,6 +74,35 @@ class TransactionService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       print("Error Transaksi Hari Ini: $e");
+      return [];
+    }
+  }
+
+  // --- AMBIL SEMUA RIWAYAT TRANSAKSI ---
+  Future<List<Map<String, dynamic>>> getTransactionHistory() async {
+    try {
+      final response = await supabase
+          .from('transactions')
+          .select()
+          .order('created_at', ascending: false); // Yang baru di atas
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print("Error Riwayat: $e");
+      return [];
+    }
+  }
+
+  // --- AMBIL DETAIL ITEM DARI SEBUAH TRANSAKSI ---
+  Future<List<Map<String, dynamic>>> getTransactionItems(int transactionId) async {
+    try {
+      // Kita join dengan tabel products untuk dapat nama barangnya
+      final response = await supabase
+          .from('transaction_items')
+          .select('*, products(brand_name)') 
+          .eq('transaction_id', transactionId);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print("Error Detail Item: $e");
       return [];
     }
   }

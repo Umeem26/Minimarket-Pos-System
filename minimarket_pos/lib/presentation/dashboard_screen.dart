@@ -6,6 +6,7 @@ import '../data/transaction_service.dart';
 import 'stock_list_screen.dart';
 import 'cashier_screen.dart';
 import 'add_product_screen.dart';
+import 'history_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -175,11 +176,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddProductScreen())).then((_) => _loadDashboardData()),
                     ),
                     _buildMenuCard(
-                      title: "Laporan",
-                      icon: Icons.analytics,
+                      title: "Laporan", // Atau ganti jadi "Riwayat"
+                      icon: Icons.history, // Ganti icon jadi history biar cocok
                       color: Colors.purple,
                       onTap: () {
-                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fitur Laporan akan segera hadir!")));
+                         // Arahkan ke Halaman Riwayat
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
                       }, 
                     ),
                   ],

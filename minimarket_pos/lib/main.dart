@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// --- TAMBAHAN PENTING (SOLUSI ERROR MERAH) ---
 import 'package:intl/date_symbol_data_local.dart'; 
 
 // Import halaman
 import 'presentation/stock_list_screen.dart';
 import 'presentation/add_product_screen.dart'; 
 import 'presentation/dashboard_screen.dart'; // Pastikan dashboard di-import
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

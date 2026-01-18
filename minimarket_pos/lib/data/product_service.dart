@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'product_model.dart';
+import 'dart:io'; // Wajib untuk handle File
 
 class ProductService {
   // Ini adalah "kunci" agar semua fungsi di bawah kenal 'supabase'
@@ -33,18 +34,17 @@ class ProductService {
   }
 
   // 3. Tambah Produk Baru (LENGKAP DENGAN HARGA)
-  Future<void> addProduct(ProductModel product, String floor, double initialQty, DateTime? expiry) async {
+  Future<void> addProduct(ProductModel product, String floor, double initialQty, DateTime? expiry, String? imageUrl) async {
     try {
-      // Simpan Data Produk Utama
       await supabase.from('products').insert({
         'id': product.id,
         'brand_name': product.brandName,
         'category_id': product.categoryId,
         'unit_type': product.unitType,
         'min_stock': product.minStock,
-        // Data Harga (Baru)
         'price': product.price,
         'capital_price': product.capitalPrice,
+        'image_url': imageUrl, // <--- SIMPAN URL FOTO DISINI
       });
 
       // Simpan Stok Awal
@@ -143,6 +143,25 @@ class ProductService {
 
     } catch (e) {
       throw Exception("Gagal Hapus Produk: $e");
+    }
+  }
+
+  // --- UPLOAD FOTO KE SUPABASE STORAGE ---
+  Future<String?> uploadImage(File imageFile) async {
+    try {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = 'uploads/$fileName';
+
+      // 1. Upload File
+      await supabase.storage.from('product-images').upload(path, imageFile);
+
+      // 2. Ambil Link Public
+      final imageUrl = supabase.storage.from('product-images').getPublicUrl(path);
+      
+      return imageUrl;
+    } catch (e) {
+      print("Gagal Upload: $e");
+      return null;
     }
   }
 } 

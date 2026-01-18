@@ -4,6 +4,7 @@ import '../data/product_service.dart';
 import '../data/transaction_model.dart';
 import '../data/transaction_service.dart';
 import 'add_product_screen.dart'; // Untuk pinjam formatter uang
+import 'package:google_fonts/google_fonts.dart'; // <--- TAMBAHKAN INI
 
 class CashierScreen extends StatefulWidget {
   const CashierScreen({super.key});
@@ -88,7 +89,6 @@ class _CashierScreenState extends State<CashierScreen> {
   void _processPayment() async {
     if (_payController.text.isEmpty) return;
     
-    // Bersihkan titik dari input uang (format rupiah)
     double paid = double.parse(_payController.text.replaceAll('.', ''));
     double total = _totalAmount;
 
@@ -100,7 +100,6 @@ class _CashierScreenState extends State<CashierScreen> {
     }
 
     try {
-      // 1. Buat Objek Transaksi
       final transaction = TransactionModel(
         totalAmount: total,
         paidAmount: paid,
@@ -108,44 +107,119 @@ class _CashierScreenState extends State<CashierScreen> {
         items: _cart,
       );
 
-      // 2. Simpan ke Database
-      await _transactionService.saveTransaction(transaction);
+      final transactionId = await _transactionService.saveTransaction(transaction);
 
-      // 3. Tampilkan Sukses & Reset
       if (mounted) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("✅ Transaksi Sukses"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Total: ${_currency.format(total)}"),
-                Text("Bayar: ${_currency.format(paid)}"),
-                const Divider(),
-                Text("KEMBALI: ${_currency.format(paid - total)}", 
-                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.green)),
-              ],
+          barrierDismissible: false,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              width: 350,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 50),
+                  const SizedBox(height: 10),
+                  const Text("TRANSAKSI SUKSES", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 5),
+                  
+                  // GoogleFonts sekarang sudah dikenali (karena import di atas)
+                  Text("Minimarket POS", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(DateFormat('dd-MM-yyyy HH:mm').format(DateTime.now()), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text("NO. NOTA: #$transactionId", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  
+                  // PERBAIKAN: Menghapus 'style: BorderStyle.solid' yang error
+                  const Divider(thickness: 2, height: 30, color: Colors.black), 
+
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _cart.length,
+                      itemBuilder: (context, index) {
+                        final item = _cart[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 4,
+                                child: Text(
+                                  "${item.productName}\n${item.quantity} x ${_currency.format(item.price)}", 
+                                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  _currency.format(item.subtotal), 
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  
+                  const Divider(thickness: 2, height: 30, color: Colors.black),
+
+                  _buildReceiptRow("TOTAL", total, isBold: true),
+                  _buildReceiptRow("BAYAR", paid),
+                  const SizedBox(height: 5),
+                  _buildReceiptRow("KEMBALI", paid - total, isBold: true, color: Colors.green),
+
+                  const SizedBox(height: 25),
+                  const Text("Terima Kasih!", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() { 
+                          _cart.clear();
+                          _payController.clear();
+                          _loadProducts(); 
+                        });
+                      }, 
+                      child: const Text("Tutup & Transaksi Baru", style: TextStyle(color: Colors.white)),
+                    ),
+                  )
+                ],
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Tutup Dialog
-                  setState(() { 
-                    _cart.clear();
-                    _payController.clear();
-                    _loadProducts(); // TAMBAHAN: Refresh stok di halaman kasir juga
-                  });
-                }, 
-                child: const Text("Tutup & Transaksi Baru")
-              )
-            ],
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
+  }
+
+  // Helper kecil buat baris angka struk
+  Widget _buildReceiptRow(String label, double value, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: 12)),
+          Text(_currency.format(value), style: TextStyle(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal, 
+            fontSize: isBold ? 14 : 12,
+            color: color ?? Colors.black
+          )),
+        ],
+      ),
+    );
   }
 
   @override
