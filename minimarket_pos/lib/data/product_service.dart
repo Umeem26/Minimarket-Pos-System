@@ -21,8 +21,10 @@ class ProductService {
     try {
       final response = await supabase
           .from('stocks')
-          .select('*, products(*, categories(*))')
+          .select('*, products!inner(*, categories(*))') // Pakai !inner agar bisa difilter
+          .eq('products.is_deleted', false) // HANYA AMBIL YANG TIDAK DIHAPUS
           .order('created_at', ascending: false);
+      
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       print("❌ Error Stok: $e");
@@ -107,6 +109,40 @@ class ProductService {
       }
     } catch (e) {
       throw Exception("Gagal Mutasi: $e");
+    }
+  }
+
+  // --- FITUR BARU: UPDATE DATA BARANG ---
+  Future<void> updateProduct(ProductModel product) async {
+    try {
+      await supabase.from('products').update({
+        'brand_name': product.brandName,
+        'category_id': product.categoryId,
+        'unit_type': product.unitType,
+        'min_stock': product.minStock,
+        'price': product.price,
+        'capital_price': product.capitalPrice,
+      }).eq('id', product.id); // Cari berdasarkan ID Barcode
+    } catch (e) {
+      throw Exception("Gagal Update Produk: $e");
+    }
+  }
+
+  // --- SOFT DELETE (HAPUS SEMU) ---
+  Future<void> deleteProduct(String productId) async {
+    try {
+      // BUKAN DELETE, TAPI UPDATE.
+      // Kita tandai is_deleted = true agar hilang dari list tapi history aman.
+      await supabase.from('products').update({
+        'is_deleted': true
+      }).eq('id', productId);
+      
+      // Opsional: Hapus stoknya agar tidak muncul di pencarian stok
+      // (Tapi biarkan data produknya ada demi riwayat transaksi)
+      await supabase.from('stocks').delete().eq('product_id', productId);
+
+    } catch (e) {
+      throw Exception("Gagal Hapus Produk: $e");
     }
   }
 } 

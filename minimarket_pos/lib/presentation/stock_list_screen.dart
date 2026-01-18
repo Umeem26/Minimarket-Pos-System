@@ -4,6 +4,7 @@ import '../data/product_service.dart';
 import 'add_product_screen.dart';
 import 'mutation_screen.dart';
 import 'cashier_screen.dart';
+import 'edit_product_screen.dart';
 
 class StockListScreen extends StatefulWidget {
   const StockListScreen({super.key});
@@ -136,20 +137,35 @@ class _StockListScreenState extends State<StockListScreen> {
                           const SizedBox(width: 5),
                           
                           // Tombol Mutasi
+                          // --- TOMBOL MUTASI (PINDAH) ---
                           IconButton(
                             icon: const Icon(Icons.swap_horiz, color: Color(0xFFEF6C00), size: 30),
                             tooltip: "Pindah Lantai",
                             onPressed: () {
                               Navigator.push(
                                 context,
+                                MaterialPageRoute(builder: (context) => MutationScreen(sourceStock: stock)),
+                              ).then((value) { if (value == true) setState(() {}); });
+                            },
+                          ),
+                          
+                          // --- TOMBOL EDIT (BARU) ---
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.grey),
+                            tooltip: "Edit Barang",
+                            onPressed: () {
+                              // Kirim Data PRODUK (bukan stok) ke halaman edit
+                              Navigator.push(
+                                context,
                                 MaterialPageRoute(
-                                  builder: (context) => MutationScreen(sourceStock: stock),
+                                  builder: (context) => EditProductScreen(productData: product),
                                 ),
                               ).then((value) {
+                                // Refresh jika ada perubahan (Update/Hapus)
                                 if (value == true) setState(() {});
                               });
                             },
-                          )
+                          ),
                         ],
                       ),
                     ],
